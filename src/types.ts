@@ -28,6 +28,14 @@ export interface Insect {
   lastFed: string;
   nextFeeding: string;
   notes: string;
+  isFed?: boolean;
+  isCleaned?: boolean;
+}
+
+export interface Beat {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export interface AIClassInfo {
