@@ -13,10 +13,11 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DaySchedule, Lesson, ProductionProject, Insect, Beat } from './types';
+import { DaySchedule, Lesson, ProductionProject, Insect, Beat, Artist, AiNote } from './types';
 
 const WEEKLY_SCHEDULE: DaySchedule[] = [
   {
@@ -90,17 +91,29 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Mock Data (In a real app, these would come from localStorage or an API)
+  // Mock Data
   const [projects] = useState<ProductionProject[]>([]);
-
   const [insects, setInsects] = useState<Insect[]>([
-    { id: 'i1', species: '', name: 'Yaprak Böceği', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
-    { id: 'i2', species: '', name: 'Kırkayak', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
-    { id: 'i3', species: '', name: 'Hamam Böceği', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
+    { id: 'i1', species: 'Extatosoma tiaratum', name: 'Tiaratum', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
+    { id: 'i2', species: 'Telodeinopus aoutii', name: 'Telodeinopus', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
+    { id: 'i3', species: 'Blaptica dubia', name: 'Dubia Hamam Böceği', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
+    { id: 'i4', species: 'Porcellio laevis', name: 'Panda Isopod', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
+    { id: 'i5', species: 'Pterinochilus murinus', name: 'Murinus', lastFed: '-', nextFeeding: '-', notes: '', isFed: false, isCleaned: false },
   ]);
+
+  const [aiNotes, setAiNotes] = useState<AiNote[]>([]);
+  const [showAiNoteModal, setShowAiNoteModal] = useState(false);
+  const [newAiNote, setNewAiNote] = useState({ title: '', content: '' });
 
   const [beats, setBeats] = useState<Beat[]>([]);
   const [newBeatName, setNewBeatName] = useState('');
+
+  const [artists, setArtists] = useState<Artist[]>([
+    { id: 'a1', name: 'Tarkan', genre: 'Pop', notes: 'Vokal kayıtları tamamlandı.' },
+    { id: 'a2', name: 'Ezhel', genre: 'Trap', notes: 'Beat düzenlemesi bekleniyor.' },
+  ]);
+  const [newArtist, setNewArtist] = useState({ name: '', genre: '', notes: '' });
+  const [showArtistModal, setShowArtistModal] = useState(false);
 
   const [showInsectModal, setShowInsectModal] = useState(false);
   const [newInsect, setNewInsect] = useState({ name: '', species: '', notes: '' });
@@ -129,6 +142,18 @@ export default function App() {
     setNewBeatName('');
   };
 
+  const handleAddArtist = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newArtist.name.trim()) return;
+    const artist: Artist = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...newArtist
+    };
+    setArtists([...artists, artist]);
+    setNewArtist({ name: '', genre: '', notes: '' });
+    setShowArtistModal(false);
+  };
+
   const handleAddInsect = (e: React.FormEvent) => {
     e.preventDefault();
     const insect: Insect = {
@@ -142,6 +167,19 @@ export default function App() {
     setInsects([...insects, insect]);
     setNewInsect({ name: '', species: '', notes: '' });
     setShowInsectModal(false);
+  };
+
+  const handleAddAiNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAiNote.title.trim()) return;
+    const note: AiNote = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...newAiNote,
+      createdAt: new Date().toLocaleDateString('tr-TR')
+    };
+    setAiNotes([note, ...aiNotes]);
+    setNewAiNote({ title: '', content: '' });
+    setShowAiNoteModal(false);
   };
 
   useEffect(() => {
@@ -173,35 +211,37 @@ export default function App() {
 
   const currentLesson = getCurrentLesson();
   const currentHour = currentTime.getHours();
+  const currentMinute = currentTime.getMinutes();
   const isSleepTime = currentHour >= 2 && currentHour < 7;
   const isEvening = currentHour >= 18 || currentHour < 6;
+  const isInsectCareTime = currentHour === 20 && currentMinute < 30;
 
   const NavItem = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => (
     <button
       onClick={() => { setActiveTab(id); setIsSidebarOpen(false); }}
-      className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 ${
+      className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 ${
         activeTab === id 
-          ? 'bg-emerald-50 text-emerald-600 font-semibold' 
-          : 'text-zinc-500 hover:bg-zinc-100'
+          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+          : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
       }`}
     >
-      <Icon size={20} />
-      <span>{label}</span>
+      <Icon size={20} className={activeTab === id ? 'text-white' : 'text-slate-400'} />
+      <span className="text-sm font-medium tracking-tight">{label}</span>
     </button>
   );
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 font-sans">
+    <div className="flex min-h-screen font-sans text-slate-900 bg-slate-50/50">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-zinc-200 p-6">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-            <LayoutDashboard size={24} />
+      <aside className="hidden lg:flex flex-col w-72 bg-white/80 backdrop-blur-xl border-r border-slate-100 p-8">
+        <div className="flex items-center gap-3 mb-12 px-2">
+          <div className="w-11 h-11 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200/50">
+            <LayoutDashboard size={24} strokeWidth={2.5} />
           </div>
-          <h1 className="text-xl font-bold tracking-tight font-display">Düzenli Bir Hayat</h1>
+          <h1 className="text-xl font-extrabold tracking-tight font-display text-slate-900">Düzenli Hayat</h1>
         </div>
 
-        <nav className="space-y-2 flex-1">
+        <nav className="space-y-1.5 flex-1">
           <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem id="schedule" icon={Calendar} label="Ders Programı" />
           <NavItem id="production" icon={Music} label="Müzik Stüdyosu" />
@@ -209,92 +249,48 @@ export default function App() {
           <NavItem id="ai-class" icon={Cpu} label="Yapay Zeka" />
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-zinc-100">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-zinc-200" />
+        <div className="mt-auto pt-8 border-t border-slate-100">
+          <div className="flex items-center gap-4 px-2">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-200/50">
+              Mİ
+            </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium">Mercan İzgi</span>
-              <span className="text-xs text-zinc-400">Lise 2 Öğrencisi</span>
+              <span className="text-sm font-bold text-slate-900">Mercan İzgi</span>
+              <span className="text-xs text-slate-500 font-medium tracking-wide">Lise 2 Öğrencisi</span>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Mobile Nav Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-50 p-6 lg:hidden shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
-                    <LayoutDashboard size={24} />
-                  </div>
-                  <h1 className="text-xl font-bold font-display">Düzenli Bir Hayat</h1>
-                </div>
-                <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-zinc-400">
-                  <X size={24} />
-                </button>
-              </div>
-              <nav className="space-y-2">
-                <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
-                <NavItem id="schedule" icon={Calendar} label="Ders Programı" />
-                <NavItem id="production" icon={Music} label="Müzik Stüdyosu" />
-                <NavItem id="insects" icon={Bug} label="Böcek Laboratuvarı" />
-                <NavItem id="ai-class" icon={Cpu} label="Yapay Zeka" />
-              </nav>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-4">
+        <header className="h-20 bg-white/60 backdrop-blur-md px-6 lg:px-10 flex items-center justify-between sticky top-0 z-30 border-b border-slate-100">
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-zinc-500"
+              className="lg:hidden p-2 -ml-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <Menu size={24} />
             </button>
-            <div className="hidden md:flex items-center gap-2 text-sm text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded-lg">
-              <Clock size={14} />
-              <span>{currentTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
-              <span className="mx-1 opacity-20">|</span>
-              <span>{currentTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}</span>
+            <div className="hidden md:flex items-center gap-3 text-sm text-slate-600 font-semibold bg-white/60 px-4 py-2 rounded-2xl border border-slate-100 shadow-sm">
+              <Clock size={16} className="text-indigo-500" />
+              <span className="tabular-nums">{currentTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="mx-1 opacity-30">|</span>
+              <span className="tracking-tight">{currentTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="p-2 text-zinc-500 hover:bg-zinc-100 rounded-lg transition-colors">
+          <div className="flex items-center gap-3">
+            <button className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white/60 rounded-2xl transition-all">
               <Search size={20} />
             </button>
-            <button className="p-2 text-zinc-500 hover:bg-zinc-100 rounded-lg transition-colors relative">
+            <button className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white/60 rounded-2xl transition-all relative">
               <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white" />
-            </button>
-            <button className="p-2 text-zinc-500 hover:bg-zinc-100 rounded-lg transition-colors">
-              <Settings size={20} />
+              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white shadow-sm" />
             </button>
           </div>
         </header>
 
-        {/* Content Area */}
         <div className="p-4 lg:p-8 max-w-7xl mx-auto w-full">
           <AnimatePresence mode="wait">
             {activeTab === 'dashboard' && (
@@ -305,139 +301,57 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-8"
               >
-                <section>
-                  <h2 className="text-3xl font-bold font-display mb-2">Merhaba, Mercan İzgi 👋</h2>
-                  <p className="text-zinc-500">Bugün için planların ve durumun burada.</p>
-                </section>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Current Class Card */}
-                  <div className={`glass-card p-6 border-none text-white transition-all duration-500 ${
-                    currentLesson?.name === 'Uyku' || isSleepTime
-                      ? 'bg-gradient-to-br from-slate-800 to-slate-950 shadow-lg shadow-slate-200'
-                      : currentLesson 
-                        ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-100' 
-                        : isEvening 
-                          ? 'bg-gradient-to-br from-indigo-600 to-purple-700 shadow-lg shadow-indigo-100'
-                          : 'bg-gradient-to-br from-zinc-700 to-zinc-900 shadow-lg shadow-zinc-200'
-                  }`}>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        {currentLesson?.name === 'Uyku' || isSleepTime ? <Clock size={20} /> : currentLesson ? <Calendar size={20} /> : isEvening ? <Music size={20} /> : <Clock size={20} />}
-                      </div>
-                      <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full uppercase tracking-wider">
-                        {currentLesson?.name === 'Uyku' || isSleepTime ? 'Uyku Zamanı' : currentLesson ? 'Şu An Derstesin' : isEvening ? 'Prodüksiyon Saati' : 'Serbest Zaman'}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">
-                      {currentLesson?.name === 'Uyku' || isSleepTime ? 'İyi Geceler' : currentLesson ? currentLesson.name : isEvening ? 'Stüdyo Zamanı' : 'Okul Bitti'}
-                    </h3>
-                    <p className="text-white/80 text-sm mb-4">
-                      {currentLesson?.name === 'Uyku' || isSleepTime
-                        ? 'Vücudun dinlenmesi için uyku saati.'
-                        : currentLesson 
-                          ? `${currentLesson.startTime} - ${currentLesson.endTime} arası dersin var.` 
-                          : isEvening 
-                            ? 'Akşam saatleri müzik üretmek için en iyi zaman.' 
-                            : 'Bugünlük okul maratonu tamamlandı.'}
-                    </p>
-                    <div className="flex items-center gap-2 text-2xl font-bold">
-                      {currentLesson?.name === 'Uyku' || isSleepTime ? 'Zzz...' : currentLesson ? 'Aktif Ders' : isEvening ? 'Yaratıcılık Modu' : 'Dinlenme'}
-                    </div>
-                  </div>
-
-                  {/* Music Production Card */}
-                  <div className="glass-card p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2 bg-zinc-100 rounded-lg text-zinc-600">
-                        <Music size={20} />
-                      </div>
-                      <button className="text-zinc-400 hover:text-emerald-600 transition-colors">
-                        <Plus size={20} />
-                      </button>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">Müzik Projeleri</h3>
-                    <p className="text-zinc-500 text-sm mb-4">Aktif olarak üzerinde çalıştığın parçalar.</p>
-                    <div className="space-y-3">
-                      {projects.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                          <div>
-                            <div className="text-sm font-medium">{p.title}</div>
-                            <div className="text-xs text-zinc-400">{p.status} • {p.bpm} BPM</div>
-                          </div>
-                          <ChevronRight size={16} className="text-zinc-300" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Insect Care Card */}
-                  <div className="glass-card p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2 bg-zinc-100 rounded-lg text-zinc-600">
-                        <Bug size={20} />
-                      </div>
-                      <button className="text-zinc-400 hover:text-emerald-600 transition-colors">
-                        <Plus size={20} />
-                      </button>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">Böcek Bakımı</h3>
-                    <p className="text-zinc-500 text-sm mb-4">Besleme ve bakım hatırlatıcıları.</p>
-                    <div className="space-y-3">
-                      {insects.map(i => (
-                        <div key={i.id} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                          <div className={`w-2 h-2 rounded-full ${i.isFed ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium">{i.name}</div>
-                            <div className="flex gap-2 mt-0.5">
-                              <div className="text-[10px] text-zinc-400">Besleme: {i.isFed ? 'Yapıldı' : 'Bekliyor'}</div>
-                              <div className="text-[10px] text-zinc-400">•</div>
-                              <div className="text-[10px] text-zinc-400">Temizlik: {i.isCleaned ? 'Yapıldı' : 'Bekliyor'}</div>
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <button 
-                              onClick={() => toggleFed(i.id)}
-                              title="Besle"
-                              className={`p-1.5 rounded-lg transition-colors ${i.isFed ? 'text-emerald-600 bg-emerald-50' : 'text-zinc-300 hover:bg-zinc-100'}`}
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => toggleCleaned(i.id)}
-                              title="Temizle"
-                              className={`p-1.5 rounded-lg transition-colors ${i.isCleaned ? 'text-emerald-600 bg-emerald-50' : 'text-zinc-300 hover:bg-zinc-100'}`}
-                            >
-                              <Settings size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                  <section>
+                    <h2 className="text-4xl lg:text-5xl font-extrabold font-display mb-3 tracking-tight text-slate-900">
+                      Merhaba, <span className="text-indigo-600">Mercan</span> 👋
+                    </h2>
+                    <p className="text-slate-500 text-lg font-medium">Bugün için planların ve durumun burada.</p>
+                  </section>
                 </div>
 
-                {/* AI Class Reminder */}
-                {currentTime.getDay() === 4 && (
-                  <motion.div 
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="p-6 bg-indigo-600 rounded-2xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-200"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <Cpu size={28} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className={`p-10 rounded-[2.5rem] text-white transition-all duration-700 col-span-1 md:col-span-2 lg:col-span-1 shadow-2xl relative overflow-hidden group ${
+                    currentLesson?.name === 'Uyku' || isSleepTime
+                      ? 'bg-slate-900'
+                      : 'bg-indigo-600'
+                  }`}>
+                    <div className="relative z-10">
+                      <div className="flex justify-between items-start mb-10">
+                        <div className="p-4 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10">
+                          <Clock size={28} />
+                        </div>
+                        <span className="text-[11px] font-bold bg-white/15 backdrop-blur-md px-4 py-2 rounded-full uppercase tracking-widest border border-white/10">
+                          {currentLesson ? 'Şu An Derstesin' : 'Durum'}
+                        </span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold">Bugün Yapay Zeka Dersi Var!</h3>
-                        <p className="text-indigo-100">Furkan Salihoğlu ile saat 20:00'de başlıyor.</p>
-                      </div>
+                      <h3 className="text-4xl font-extrabold font-display mb-3">
+                        {currentLesson ? currentLesson.name : 'Serbest Zaman'}
+                      </h3>
+                      <p className="text-white/80 font-medium">
+                        {currentLesson ? `${currentLesson.startTime} - ${currentLesson.endTime}` : 'Dinlenme ve prodüksiyon saati.'}
+                      </p>
                     </div>
-                    <button className="px-6 py-2.5 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors">
-                      Derse Katıl / Notlar
-                    </button>
-                  </motion.div>
-                )}
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col group hover:shadow-xl transition-all">
+                    <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl w-fit mb-6">
+                      <Music size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-1 text-slate-900 font-display">Müzik Stüdyosu</h3>
+                    <p className="text-slate-500 text-sm mb-6 font-medium">{beats.length} Beat • {artists.length} Sanatçı</p>
+                    <button onClick={() => setActiveTab('production')} className="mt-auto py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all">Detaylar</button>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col group hover:shadow-xl transition-all">
+                    <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl w-fit mb-6">
+                      <Bug size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-1 text-slate-900 font-display">Böcek Laboratuvarı</h3>
+                    <p className="text-slate-500 text-sm mb-6 font-medium">{insects.length} Tür Takipte</p>
+                    <button onClick={() => setActiveTab('insects')} className="mt-auto py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all">Detaylar</button>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -447,35 +361,21 @@ export default function App() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
+                className="space-y-8"
               >
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h2 className="text-3xl font-bold font-display">Haftalık Ders Programı</h2>
-                    <p className="text-zinc-500">10-O AMP Otomasyon Sınıfı</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <h2 className="text-4xl font-extrabold font-display text-slate-900 tracking-tight">Haftalık Program</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                   {WEEKLY_SCHEDULE.map((day) => (
-                    <div key={day.day} className="glass-card overflow-hidden">
-                      <div className="p-4 bg-zinc-50 border-b border-zinc-200 flex justify-between items-center">
-                        <h3 className="font-bold text-zinc-700">{day.day}</h3>
-                        <span className="text-xs font-medium text-zinc-400">{day.lessons.length} Ders</span>
+                    <div key={day.day} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                      <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-900 text-lg font-display">{day.day}</h3>
+                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-widest">{day.lessons.length} Ders</span>
                       </div>
-                      <div className="p-4 space-y-4">
+                      <div className="p-6 space-y-4">
                         {day.lessons.map((lesson) => (
-                          <div key={lesson.id} className="flex gap-4 group">
-                            <div className="flex flex-col items-center gap-1 min-w-[50px]">
-                              <span className="text-xs font-bold text-zinc-400">{lesson.startTime}</span>
-                              <div className="w-0.5 flex-1 bg-zinc-100 rounded-full group-last:hidden" />
-                            </div>
-                            <div className="flex-1 pb-4">
-                              <div className="p-3 bg-white border border-zinc-100 rounded-xl shadow-sm hover:border-emerald-200 transition-colors">
-                                <div className="font-bold text-zinc-800">{lesson.name}</div>
-                                <div className="text-xs text-zinc-400 mt-1">{lesson.startTime} - {lesson.endTime}</div>
-                              </div>
-                            </div>
+                          <div key={lesson.id} className="p-4 bg-slate-50/30 border border-slate-100 rounded-2xl">
+                            <div className="font-bold text-slate-900">{lesson.name}</div>
+                            <div className="text-xs text-slate-400 font-bold mt-1 tabular-nums">{lesson.startTime} — {lesson.endTime}</div>
                           </div>
                         ))}
                       </div>
@@ -490,105 +390,82 @@ export default function App() {
                 key="production"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="space-y-6"
+                className="space-y-10"
               >
                 <div className="flex justify-between items-center">
-                  <h2 className="text-3xl font-bold font-display">Müzik Stüdyosu</h2>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors">
-                    <Plus size={18} />
-                    Yeni Proje
+                  <h2 className="text-4xl font-extrabold font-display text-slate-900 tracking-tight">Müzik Stüdyosu</h2>
+                  <button onClick={() => setShowArtistModal(true)} className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-2">
+                    <Plus size={20} /> Sanatçı Ekle
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Music size={20} className="text-emerald-600" />
-                      Aktif Projeler
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {projects.map(p => (
-                        <div key={p.id} className="glass-card p-6 hover:shadow-lg transition-shadow cursor-pointer group">
-                          <div className="flex justify-between items-start mb-6">
-                            <div className="w-12 h-12 bg-zinc-100 rounded-2xl flex items-center justify-center text-zinc-600 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-                              <Music size={24} />
-                            </div>
-                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                              p.status === 'Mixing' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
-                            }`}>
-                              {p.status}
-                            </span>
-                          </div>
-                          <h3 className="text-xl font-bold mb-2">{p.title}</h3>
-                          <div className="flex gap-4 text-sm text-zinc-400">
-                            <span className="flex items-center gap-1"><Clock size={14} /> {p.bpm} BPM</span>
-                            <span className="flex items-center gap-1"><CheckCircle2 size={14} /> {p.key}</span>
-                          </div>
-                          <div className="mt-6 w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-emerald-500 h-full rounded-full" 
-                              style={{ width: p.status === 'Mixing' ? '75%' : '40%' }} 
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      {projects.length === 0 && (
-                        <div className="col-span-full p-12 border-2 border-dashed border-zinc-200 rounded-3xl flex flex-col items-center justify-center text-zinc-400">
-                          <Music size={40} className="mb-4 opacity-20" />
-                          <p>Henüz aktif bir proje yok.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Cpu size={20} className="text-emerald-600" />
-                      Beatler
-                    </h3>
-                    <div className="glass-card p-6">
-                      <form onSubmit={handleAddBeat} className="flex gap-2 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                  <div className="lg:col-span-2 space-y-8">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <h3 className="text-2xl font-bold mb-6 font-display">Beat Arşivi</h3>
+                      <form onSubmit={handleAddBeat} className="flex gap-3 mb-8">
                         <input 
                           type="text" 
                           value={newBeatName}
                           onChange={e => setNewBeatName(e.target.value)}
                           placeholder="Yeni beat ismi..."
-                          className="flex-1 px-4 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="flex-1 px-5 py-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
                         />
-                        <button 
-                          type="submit"
-                          className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
-                        >
-                          <Plus size={20} />
+                        <button type="submit" className="px-6 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                          <Plus size={24} />
                         </button>
                       </form>
-
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {beats.map(beat => (
-                          <div key={beat.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-emerald-200 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-zinc-400 group-hover:text-emerald-600 transition-colors">
-                                <Music size={18} />
-                              </div>
-                              <div>
-                                <div className="font-bold text-zinc-800">{beat.name}</div>
-                                <div className="text-[10px] text-zinc-400 uppercase tracking-wider">{beat.createdAt}</div>
-                              </div>
+                          <div key={beat.id} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex justify-between items-center">
+                            <div>
+                              <div className="font-bold text-slate-900">{beat.name}</div>
+                              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{beat.createdAt}</div>
                             </div>
-                            <button className="p-2 text-zinc-300 hover:text-zinc-500">
-                              <ChevronRight size={18} />
-                            </button>
+                            <Music size={20} className="text-slate-300" />
                           </div>
                         ))}
-                        {beats.length === 0 && (
-                          <div className="text-center py-12 text-zinc-400">
-                            <p className="text-sm">Henüz kaydedilmiş beat yok.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <h3 className="text-2xl font-bold mb-6 font-display">İşbirlikleri</h3>
+                      <div className="space-y-4">
+                        {artists.map(artist => (
+                          <div key={artist.id} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-slate-900">{artist.name}</h4>
+                              <span className="text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full uppercase tracking-widest">{artist.genre}</span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium line-clamp-2 italic">"{artist.notes}"</p>
                           </div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <AnimatePresence>
+                  {showArtistModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowArtistModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
+                      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl">
+                        <h3 className="text-3xl font-extrabold text-slate-900 font-display mb-8">Yeni Sanatçı</h3>
+                        <form onSubmit={handleAddArtist} className="space-y-6">
+                          <input type="text" required value={newArtist.name} onChange={e => setNewArtist({...newArtist, name: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" placeholder="Sanatçı Adı" />
+                          <input type="text" value={newArtist.genre} onChange={e => setNewArtist({...newArtist, genre: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" placeholder="Müzik Türü" />
+                          <textarea value={newArtist.notes} onChange={e => setNewArtist({...newArtist, notes: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all min-h-[120px]" placeholder="Notlar" />
+                          <div className="flex gap-4">
+                            <button type="button" onClick={() => setShowArtistModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-50">Vazgeç</button>
+                            <button type="submit" className="flex-1 py-4 rounded-2xl font-bold text-white bg-indigo-600 shadow-xl shadow-indigo-200">Kaydet</button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -597,73 +474,40 @@ export default function App() {
                 key="insects"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
+                className="space-y-10"
               >
                 <div className="flex justify-between items-center">
-                  <h2 className="text-3xl font-bold font-display">Böcek Laboratuvarı</h2>
-                  <button 
-                    onClick={() => setShowInsectModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors"
-                  >
-                    <Plus size={18} />
-                    Yeni Kayıt
+                  <h2 className="text-4xl font-extrabold font-display text-slate-900 tracking-tight">Böcek Laboratuvarı</h2>
+                  <button onClick={() => setShowInsectModal(true)} className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-2">
+                    <Plus size={20} /> Yeni Kayıt
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {insects.map(i => (
-                    <div key={i.id} className="glass-card p-6 flex flex-col sm:flex-row gap-6">
-                      <div className="w-full sm:w-32 h-32 bg-zinc-100 rounded-2xl flex items-center justify-center text-zinc-400">
+                    <div key={i.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex gap-6 group hover:shadow-xl transition-all">
+                      <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all shrink-0">
                         <Bug size={48} />
                       </div>
                       <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="text-xl font-bold">{i.name}</h3>
-                            {i.species && <p className="text-sm italic text-zinc-500">{i.species}</p>}
+                            <h3 className="text-xl font-bold text-slate-900 font-display">{i.name}</h3>
+                            <p className="text-xs italic text-slate-400 font-medium">{i.species}</p>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <div className="flex gap-4">
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Besleme</span>
-                                <button 
-                                  onClick={() => toggleFed(i.id)}
-                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                                    i.isFed 
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                                      : 'bg-white border-zinc-200 text-zinc-400 hover:border-amber-300'
-                                  }`}
-                                >
-                                  <CheckCircle2 size={16} />
-                                  <span className="text-xs font-bold">{i.isFed ? 'Beslendi' : 'Besle'}</span>
-                                </button>
-                              </div>
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Temizlik</span>
-                                <button 
-                                  onClick={() => toggleCleaned(i.id)}
-                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                                    i.isCleaned 
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                                      : 'bg-white border-zinc-200 text-zinc-400 hover:border-amber-300'
-                                  }`}
-                                >
-                                  <Settings size={16} />
-                                  <span className="text-xs font-bold">{i.isCleaned ? 'Yapıldı' : 'Temizle'}</span>
-                                </button>
-                              </div>
-                            </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => toggleFed(i.id)} className={`p-2 rounded-xl border transition-all ${i.isFed ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}><CheckCircle2 size={18} /></button>
+                            <button onClick={() => toggleCleaned(i.id)} className={`p-2 rounded-xl border transition-all ${i.isCleaned ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}><Settings size={18} /></button>
                           </div>
                         </div>
-                        {i.notes && <p className="text-sm text-zinc-600 mb-4">{i.notes}</p>}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                            <div className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 mb-1">Son Besleme</div>
-                            <div className="text-sm font-medium">{i.lastFed}</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-3 bg-slate-50 rounded-2xl">
+                            <div className="text-[8px] uppercase font-bold text-slate-400 mb-1">Son Besleme</div>
+                            <div className="text-xs font-bold text-slate-900">{i.lastFed}</div>
                           </div>
-                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                            <div className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 mb-1">Temizlik Durumu</div>
-                            <div className="text-sm font-medium text-emerald-700">{i.isCleaned ? 'Temiz' : 'Kirli'}</div>
+                          <div className="p-3 bg-slate-50 rounded-2xl">
+                            <div className="text-[8px] uppercase font-bold text-slate-400 mb-1">Durum</div>
+                            <div className={`text-xs font-bold ${i.isCleaned ? 'text-emerald-600' : 'text-amber-600'}`}>{i.isCleaned ? 'Temiz' : 'Bakım'}</div>
                           </div>
                         </div>
                       </div>
@@ -671,69 +515,19 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* New Insect Modal */}
                 <AnimatePresence>
                   {showInsectModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setShowInsectModal(false)}
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                      />
-                      <motion.div 
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        className="relative bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
-                      >
-                        <h3 className="text-2xl font-bold mb-6">Yeni Böcek Kaydı</h3>
-                        <form onSubmit={handleAddInsect} className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-bold text-zinc-500 mb-1">İsim</label>
-                            <input 
-                              type="text" 
-                              required
-                              value={newInsect.name}
-                              onChange={e => setNewInsect({...newInsect, name: e.target.value})}
-                              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                              placeholder="Böceğin adı..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-zinc-500 mb-1">Tür (Opsiyonel)</label>
-                            <input 
-                              type="text" 
-                              value={newInsect.species}
-                              onChange={e => setNewInsect({...newInsect, species: e.target.value})}
-                              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                              placeholder="Bilimsel adı veya türü..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-zinc-500 mb-1">Notlar</label>
-                            <textarea 
-                              value={newInsect.notes}
-                              onChange={e => setNewInsect({...newInsect, notes: e.target.value})}
-                              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-[100px]"
-                              placeholder="Bakım notları..."
-                            />
-                          </div>
-                          <div className="flex gap-3 pt-4">
-                            <button 
-                              type="button"
-                              onClick={() => setShowInsectModal(false)}
-                              className="flex-1 py-3 rounded-xl font-bold text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition-colors"
-                            >
-                              İptal
-                            </button>
-                            <button 
-                              type="submit"
-                              className="flex-1 py-3 rounded-xl font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors"
-                            >
-                              Kaydet
-                            </button>
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowInsectModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
+                      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl">
+                        <h3 className="text-3xl font-extrabold text-slate-900 font-display mb-8">Yeni Kayıt</h3>
+                        <form onSubmit={handleAddInsect} className="space-y-6">
+                          <input type="text" required value={newInsect.name} onChange={e => setNewInsect({...newInsect, name: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" placeholder="Böcek Adı" />
+                          <input type="text" value={newInsect.species} onChange={e => setNewInsect({...newInsect, species: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" placeholder="Tür" />
+                          <textarea value={newInsect.notes} onChange={e => setNewInsect({...newInsect, notes: e.target.value})} className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all min-h-[120px]" placeholder="Notlar" />
+                          <div className="flex gap-4">
+                            <button type="button" onClick={() => setShowInsectModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-50">Vazgeç</button>
+                            <button type="submit" className="flex-1 py-4 rounded-2xl font-bold text-white bg-emerald-600 shadow-xl shadow-emerald-200">Kaydet</button>
                           </div>
                         </form>
                       </motion.div>
@@ -746,52 +540,112 @@ export default function App() {
             {activeTab === 'ai-class' && (
               <motion.div
                 key="ai-class"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-8 max-w-3xl mx-auto"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-12 max-w-4xl mx-auto py-10"
               >
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto">
-                    <Cpu size={40} />
+                <div className="text-center space-y-6">
+                  <div className="w-24 h-24 bg-indigo-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl relative">
+                    <Cpu size={48} />
+                    <div className="absolute -right-2 -top-2 w-8 h-8 bg-emerald-500 rounded-full border-4 border-white shadow-lg animate-pulse" />
                   </div>
-                  <h2 className="text-4xl font-bold font-display">Yapay Zeka Eğitimi</h2>
-                  <p className="text-zinc-500">Furkan Salihoğlu ile her Perşembe geleceği inşa ediyoruz.</p>
+                  <h2 className="text-5xl font-extrabold font-display text-slate-900 tracking-tight">Yapay Zeka Eğitimi</h2>
+                  <p className="text-slate-500 text-xl font-medium">Furkan Salihoğlu ile her Perşembe geleceği inşa ediyoruz.</p>
                 </div>
 
-                <div className="glass-card p-8 space-y-6">
-                  <div className="flex items-center gap-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                      <Calendar size={24} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center gap-5 p-6 bg-indigo-50 rounded-3xl">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
+                      <Calendar size={28} />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Ders Günü</div>
-                      <div className="text-lg font-bold text-indigo-900">Perşembe, 20:00 - 21:00</div>
+                      <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Ders Günü</div>
+                      <div className="text-lg font-bold text-slate-900">Perşembe</div>
                     </div>
                   </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <CheckCircle2 size={20} className="text-emerald-500" />
-                      Öğrenilecek Konular
-                    </h3>
-                    <ul className="space-y-3">
-                      {['Machine Learning Temelleri', 'Neural Networks & Deep Learning', 'Python ile Veri Analizi', 'LLM Entegrasyonları'].map((topic, idx) => (
-                        <li key={idx} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl text-zinc-700">
-                          <div className="w-6 h-6 bg-white border border-zinc-200 rounded-lg flex items-center justify-center text-xs font-bold">
-                            {idx + 1}
-                          </div>
-                          {topic}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="pt-6">
-                    <button className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]">
-                      Ders Notlarını Aç
-                    </button>
+                  <div className="flex items-center gap-5 p-6 bg-violet-50 rounded-3xl">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-violet-600 shadow-sm">
+                      <Clock size={28} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-1">Ders Saati</div>
+                      <div className="text-lg font-bold text-slate-900 tabular-nums">20:00 - 21:00</div>
+                    </div>
                   </div>
                 </div>
+
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-bold font-display text-slate-900">Ders Notları</h3>
+                    <button 
+                      onClick={() => setShowAiNoteModal(true)}
+                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2 text-sm"
+                    >
+                      <Plus size={18} /> Not Ekle
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {aiNotes.map(note => (
+                      <div key={note.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:border-indigo-200 transition-all group">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
+                            <FileText size={18} className="text-indigo-400" />
+                            {note.title}
+                          </h4>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{note.createdAt}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed">{note.content}</p>
+                      </div>
+                    ))}
+                    {aiNotes.length === 0 && (
+                      <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-3xl">
+                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300">
+                          <FileText size={24} />
+                        </div>
+                        <p className="text-slate-400 font-bold">Henüz ders notu eklenmemiş.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {showAiNoteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAiNoteModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
+                      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl">
+                        <h3 className="text-3xl font-extrabold text-slate-900 font-display mb-8">Yeni Ders Notu</h3>
+                        <form onSubmit={handleAddAiNote} className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Başlık</label>
+                            <input 
+                              type="text" 
+                              required 
+                              value={newAiNote.title} 
+                              onChange={e => setNewAiNote({...newAiNote, title: e.target.value})} 
+                              className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" 
+                              placeholder="Ders konusu..." 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">İçerik</label>
+                            <textarea 
+                              required
+                              value={newAiNote.content} 
+                              onChange={e => setNewAiNote({...newAiNote, content: e.target.value})} 
+                              className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all min-h-[150px]" 
+                              placeholder="Notlarınızı buraya yazın..." 
+                            />
+                          </div>
+                          <div className="flex gap-4">
+                            <button type="button" onClick={() => setShowAiNoteModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-50">Vazgeç</button>
+                            <button type="submit" className="flex-1 py-4 rounded-2xl font-bold text-white bg-indigo-600 shadow-xl shadow-indigo-200">Kaydet</button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
@@ -799,34 +653,22 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 px-4 py-2 flex justify-around items-center z-40 pb-safe">
-        <button 
-          onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'dashboard' ? 'text-emerald-600' : 'text-zinc-400'}`}
-        >
-          <LayoutDashboard size={20} />
-          <span className="text-[10px] font-bold uppercase">Ana Sayfa</span>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 flex justify-around items-center z-40 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1.5 p-2 transition-all ${activeTab === 'dashboard' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>
+          <LayoutDashboard size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Panel</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('schedule')}
-          className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'schedule' ? 'text-emerald-600' : 'text-zinc-400'}`}
-        >
-          <Calendar size={20} />
-          <span className="text-[10px] font-bold uppercase">Dersler</span>
+        <button onClick={() => setActiveTab('schedule')} className={`flex flex-col items-center gap-1.5 p-2 transition-all ${activeTab === 'schedule' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>
+          <Calendar size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Program</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('production')}
-          className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'production' ? 'text-emerald-600' : 'text-zinc-400'}`}
-        >
-          <Music size={20} />
-          <span className="text-[10px] font-bold uppercase">Stüdyo</span>
+        <button onClick={() => setActiveTab('production')} className={`flex flex-col items-center gap-1.5 p-2 transition-all ${activeTab === 'production' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>
+          <Music size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Stüdyo</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('insects')}
-          className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'insects' ? 'text-emerald-600' : 'text-zinc-400'}`}
-        >
-          <Bug size={20} />
-          <span className="text-[10px] font-bold uppercase">Böcekler</span>
+        <button onClick={() => setActiveTab('insects')} className={`flex flex-col items-center gap-1.5 p-2 transition-all ${activeTab === 'insects' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>
+          <Bug size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Böcekler</span>
         </button>
       </nav>
     </div>

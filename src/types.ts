@@ -44,3 +44,17 @@ export interface AIClassInfo {
   topic?: string;
   notes: string[];
 }
+
+export interface Artist {
+  id: string;
+  name: string;
+  genre?: string;
+  notes?: string;
+}
+
+export interface AiNote {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
